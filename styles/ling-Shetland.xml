@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- ling.xml
+  A stylesheet for creating maps of linguistic field sites, showing 
+  inhabited areas, roads and other transportation links.
+-->
+
+<!DOCTYPE Map [
+<!ENTITY landcol "#ddd">
+<!ENTITY watercol "#fff">
+<!ENTITY residentialcol "#f00">
+
+<!ENTITY labelcol "#000">
+
+<!ENTITY roadcol "#888">
+<!ENTITY ferrycol "#66f">
+
+<!ENTITY linejoin "round">
+<!ENTITY linecap "round">
+
+<!ENTITY font "DejaVu Serif Book">
+]>
+
+<Map srs="+proj=ortho +ellps=WGS84 +lon_0=-1.475 +lat_0=60.355">
+<!--Map srs="+proj=ortho +ellps=WGS84 +lon_0=-1.4 +lat_0=60.345"-->
+
+  <Layer name="land" srs="+init=epsg:3857">
+    <StyleName>land</StyleName>
+    <StyleName>areas</StyleName>
+    <Datasource>
+      <Parameter name="type">postgis</Parameter>
+      <Parameter name="dbname">gis</Parameter>
+      <Parameter name="table">
+        (select place, landuse, "natural", way_area, ST_Simplify(way, 100, TRUE) AS way FROM planet_osm_polygon WHERE way_area &gt; 15000) as outlines</Parameter>
+    </Datasource>
+  </Layer>
+
+  <Layer name="lines" srs="+init=epsg:3857">
+    <StyleName>lines</StyleName>
+    <Datasource>
+      <Parameter name="type">postgis</Parameter>
+      <Parameter name="dbname">gis</Parameter>
+      <Parameter name="table">(select highway, route, waterway, way from planet_osm_line order by waterway) as lines</Parameter>
+    </Datasource>
+  </Layer>
+
+  <Layer name="symbols" srs="+init=epsg:3857">
+    <StyleName>symbols</StyleName>
+    <Datasource>
+      <Parameter name="type">postgis</Parameter>
+      <Parameter name="dbname">gis</Parameter>
+      <Parameter name="table">(select aeroway, way from planet_osm_polygon where aeroway = 'aerodrome' UNION select aeroway, way from planet_osm_point where aeroway = 'aerodrome') as airports</Parameter>
+    </Datasource>
+  </Layer>
+
+  <Layer name="names" srs="+init=epsg:3857">
+    <StyleName>names</StyleName>
+    <Datasource>
+      <Parameter name="type">postgis</Parameter>
+      <Parameter name="dbname">gis</Parameter>
+      <Parameter name="table">
+        (select name, place, way from planet_osm_polygon WHERE place = 'island' and way_area &gt; 80000000 UNION select name, place, way from planet_osm_point WHERE place = 'town' ORDER BY place DESC) as named
+      </Parameter>
+    </Datasource>
+  </Layer>
+
+  <Style name="land">
+    <Rule>
+      <Filter>[place] = 'archipelago' or [place] = 'island'</Filter>
+      <PolygonSymbolizer fill="&landcol;" />
+    </Rule>
+  </Style>
+
+  <Style name="areas">
+    <Rule>
+      <Filter>[landuse] = 'residential'</Filter>
+      <PolygonSymbolizer fill="&residentialcol;" />
+    </Rule>
+    <Rule>
+      <Filter>[natural] = 'water' and [way_area] &gt; 100000</Filter>
+      <PolygonSymbolizer fill="&watercol;" />
+    </Rule>
+  </Style>
+
+  <Style name="lines">
+    <Rule>
+      <Filter>[waterway] = 'river'</Filter>
+      <LineSymbolizer stroke="&watercol;" stroke-width="0.2" stroke-linejoin="&linejoin;" stroke-linecap="&linecap;" />
+    </Rule>
+    <Rule><!-- or 0.8 6,6 -->
+      <!-- amenity=ferry_terminal mooring=ferry -->
+      <Filter>[route] = 'ferry'</Filter>
+      <LineSymbolizer stroke="&ferrycol;" stroke-width="0.5" stroke-dasharray="2,2"/>
+    </Rule>
+    <Rule>
+      <Filter>[highway] = 'primary'</Filter>
+      <LineSymbolizer stroke="&roadcol;" stroke-width="0.5" stroke-linejoin="&linejoin;" stroke-linecap="&linecap;" />
+    </Rule>
+    <Rule>
+      <Filter>[highway] = 'secondary'</Filter>
+      <LineSymbolizer stroke="&roadcol;" stroke-width="0.3" stroke-linejoin="&linejoin;" stroke-linecap="&linecap;" />
+    </Rule>
+    <Rule>
+      <!-- residential? -->
+      <Filter>[highway] = 'tertiary' or [highway] = 'unclassified'</Filter>
+      <LineSymbolizer stroke="&roadcol;" stroke-width="0.25" stroke-linejoin="&linejoin;" stroke-linecap="&linecap;" />
+    </Rule>
+  </Style>
+
+  <Style name="symbols">
+    <Rule>
+      <Filter>[aeroway] = 'aerodrome'</Filter>
+      <!-- https://commons.wikimedia.org/wiki/File:Pictograms-nps-airport.svg -->
+      <PointSymbolizer file="airport.svg" transform="scale(0.08)" />
+      <!--[amenity] = 'ferry_terminal' -->
+    </Rule>
+  </Style>
+
+  <Style name="names">
+    <Rule>
+      <Filter>[place] = 'town'</Filter>
+      <TextSymbolizer face-name="&font;" margin="5" size="8" fill="#933" halo-fill="#fdd" halo-radius="0.3" dy="-5">[name]</TextSymbolizer>
+    </Rule>
+    <Rule>
+      <Filter>[place] = 'island'</Filter>
+      <TextSymbolizer face-name="&font;" margin="5" size="10" fill="&labelcol;" halo-fill="#eee" halo-radius="0.6" placement-type="list">
+        [name]<!-- TODO make halo transparent? -->
+        <Placement dx="1" dy="1" /><!-- move Bressay label out of Lerwick -->
+      </TextSymbolizer>
+    </Rule>
+  </Style>
+</Map>

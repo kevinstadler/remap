@@ -1,0 +1,5 @@
+#!/bin/sh
+if [ $# -ne 1 ]; then
+  echo "Usage: download-boundaries <area-name>"
+fi
+`dirname $0`/overpass "$1-boundaries.osm" "$1" ';(rel(area)[boundary];>;)'

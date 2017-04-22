@@ -1,0 +1,2 @@
+#!/bin/sh
+osm2pgsql --style "`dirname $0`/remap.style" --slim --cache 1800 --number-processes 2 -d gis --keep-coastlines --append "$1"

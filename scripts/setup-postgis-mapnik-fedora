@@ -1,0 +1,83 @@
+#!/bin/sh
+die() { echo "$@" 1>&2 ; cd $PWD ; exit 1;}
+
+if [ $UID -ne 0 ]; then
+  die "Error: need to be root"
+fi
+
+dnf -y install osm2pgsql postgis python-mapnik || die "Failed to install required packages"
+# could add other packages such as editors, e.g. qgis, josm,.. # geos-devel
+
+# steps based on http://wiki.openstreetmap.org/wiki/PostGIS/Installation#Activate_PostGIS
+postgresql-setup --initdb --unit postgresql
+systemctl start postgresql || die "Failed to start postgresql server"
+
+# change desired username as appropriate
+GISUSER=$USER
+GISPWD="CHANGEME"
+
+echo "
+Creating database 'gis' owned by user '$GISUSER'
+"
+cd / # change dir to avoid any "could not change directory" messages
+sudo -u postgres createuser $GISUSER || die "Failed to create user $GISUSER"
+# change desired password
+sudo -u postgres psql --quiet -c "ALTER USER $GISUSER WITH PASSWORD '$GISPWD';" || die "Failed to set user password"
+
+# create and populate database
+sudo -u postgres createdb --encoding=UTF8 --owner=$GISUSER gis || die "Failed to create database 'gis'"
+sudo -u postgres psql --quiet gis < /usr/share/pgsql/contrib/postgis-2.2/postgis.sql &&
+sudo -u postgres psql --quiet gis < /usr/share/pgsql/contrib/postgis-2.2/spatial_ref_sys.sql ||
+die "Failed to install PostGIS extensions"
+
+cd $PWD
+
+echo "Done setting up PostGIS!
+
+To populate database with actual data, get either the full osm planet file:
+> wget http://planet.openstreetmap.org/planet/planet-latest.osm.bz2
+
+for smaller sub regions see http://download.geofabrik.de
+for metropolitan area extracts see https://mapzen.com/data/metro-extracts/
+
+Add data by invoking
+> osm2pgsql --slim --cache 1000 -d gis planet-latest.osm.pbf
+
+the --slim option is both recommended and necessary for any data set that
+doesn't fit into RAM. size of cache (in MB) should ideally be larger than
+no. of nodes / 100.000
+In terms of space requirements, a 700 MB pbf will take ~16GB on disk.
+Disk usage can be reduced to about half by adding --drop (although in this
+case it won't be possible to quickly update existing database contents with
+the --append option).
+
+
+# mapnik configuration
+mapnik's PostGIS plugin appears to connect locally, but through an IPv6 socket.
+If you want to connect as the current user, make sure to NOT specify any of the
+user, password, host or port <Parameter>s in your mapnik XML file.
+
+If you want to access postgresql under a different username, to be able to
+connect you need to add the following line to /var/lib/pgsql/data/pg_hba.conf
+
+host	gis	$GISUSER	::1/128	md5
+
+
+(Change 'md5' to 'trust' to disable passwords for that user altogether.)
+(Don't forget to `systemctl reload postgresql` for the change to take effect)
+
+postgresql is currently running, but will have to be started again on reboot:
+
+> systemctl start postgresql
+
+If you want postgresql to start automatically on every boot, run
+
+> systemctl enable postgresql
+
+"
+# suggest --keep-coastlines
+cd /
+
+# reset:
+#sudo -u postgres dropdb gis
+#sudo -u postgres dropuser $GISUSER

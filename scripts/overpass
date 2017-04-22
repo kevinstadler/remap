@@ -1,0 +1,28 @@
+#!/bin/sh
+if [ $# -ne 3 ]; then
+  echo "Usage: overpass <outputfile> <area-name-or-rel-id> <filter-query>"
+  exit 1
+fi
+
+if [ -f "$1" ]; then
+  echo "Error: $1 already exists"
+  exit 1
+fi
+
+# from rel id. attention:
+# Relations are found if one of its members is properly inside the area.
+if [ "$2" -eq "$2" ] 2>/dev/null; then
+  AREA="rel(id:$2); map_to_area"
+else
+#  AREA="area[\"ISO3166-1\"=\"$1\"]"
+  AREA="area[name=\"$2\"]"
+fi
+
+QUERY="$AREA $3; out meta;"
+
+echo
+echo "Running query: $QUERY"
+echo
+
+time -f "Total time (wait+download): %E" wget -O "$1" "http://overpass-api.de/api/interpreter?data=$QUERY"
+#time -f "Total time (wait+download): %E" wget -O "$1" "http://overpass.osm.rambler.ru/cgi/interpreter?data=$2"

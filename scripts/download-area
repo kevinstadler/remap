@@ -1,0 +1,22 @@
+#!/bin/sh
+if [ $# -ne 1 ]; then
+  echo "Usage: download-area <area-name-or-rel-id>"
+  exit 1
+fi
+
+# query all nodes, relations and ways inside the area, then recurse upwards
+# from the union of ways and relations to also get their outside-area parts
+# http://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL#By_area_.28area.29
+`dirname $0`/overpass "$1-area.osm" "$1" " -> .x; (node(area.x); (rel(area.x); way(area.x);); >;)"
+
+# TODO use a more constrained recursion instead of < ?
+# 1. the nodes (save in x)
+# 2. their containing ways
+# 3. the relations those ways are in
+# 4. and all their contained nodes and ways
+# 5. x's containing relations
+# 6. and all their contained nodes and ways
+
+# bbox examples:
+#(node(51.5076,-0.1086,51.5117,-0.1000)->.x;way(bn.x);rel(bw);>;rel(bn.x);>;.x;way(bn.x);>;);out meta;
+#node(35.68450,-105.94073,35.68713,-105.93708);(._;<;>;);out meta;
