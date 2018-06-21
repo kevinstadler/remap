@@ -25,7 +25,7 @@ OSM's full planet data is big, takes an awful long time to import, and you proba
 -   for urban extracts: <https://mapzen.com/data/metro-extracts/>
 -   for country/continent extracts: <https://download.geofabrik.de>
 
-useful scripts for further filtering of extracts, as well as for querying small data sets directly from osm's [overpass api](wiki.openstreetmap.org/wiki/Overpass_API) can be found in \[scripts/\].
+useful scripts for further filtering of extracts, as well as for querying small data sets directly from osm's [overpass api](https://wiki.openstreetmap.org/wiki/Overpass_API) can be found in \[scripts/\].
 
 links
 -----
@@ -89,5 +89,5 @@ todos
 =====
 
 -   switch to imposm3
--   unify ways which are connected when they share the same name and highway classification (see [here](https://gis.stackexchange.com/questions/61845/how-to-merge-connected-lines-with-same-direction-postgis) and [here](https://gis.stackexchange.com/questions/94203/grouping-connected-linestrings-in-postgis).
+-   unify ways which are connected when they share the same name and highway classification (see [here](https://gis.stackexchange.com/questions/61845/how-to-merge-connected-lines-with-same-direction-postgis) and [here](https://gis.stackexchange.com/questions/94203/grouping-connected-linestrings-in-postgis))
 -   maybe use [Skeletron](https://github.com/migurski/Skeletron)?
